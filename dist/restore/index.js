@@ -112,6 +112,13 @@ exports.issueCommand = issueCommand;
 
 /***/ }),
 
+/***/ 129:
+/***/ (function(module) {
+
+module.exports = require("child_process");
+
+/***/ }),
+
 /***/ 211:
 /***/ (function(__unusedmodule, exports) {
 
@@ -579,7 +586,7 @@ module.exports = require("path");
 /***/ }),
 
 /***/ 722:
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
@@ -594,6 +601,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveCache = exports.restoreCache = exports.ReserveCacheError = exports.ValidationError = void 0;
+const child_process_1 = __webpack_require__(129);
 class ValidationError extends Error {
     constructor(message) {
         super(message);
@@ -650,6 +658,31 @@ exports.restoreCache = restoreCache;
  */
 function saveCache(paths, key, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(JSON.stringify(process.env, null, 2));
+        return new Promise((resolve, reject) => {
+            // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
+            // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
+            const { stdout, stderr } = child_process_1.exec("cat *.js missing_file | wc -l", (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`exec error: ${error}`);
+                    reject(error);
+                    return;
+                }
+                console.log(`stdout: ${stdout}`);
+                console.error(`stderr: ${stderr}`);
+                resolve(420);
+            });
+            if (stdout) {
+                stdout.on("data", data => {
+                    console.log(`Received chunk ${data}`);
+                });
+            }
+            if (stderr) {
+                stderr.on("data", data => {
+                    console.error(`Received error chunk ${data}`);
+                });
+            }
+        });
         console.log(JSON.stringify({ paths, key, options }));
         return Promise.resolve(420);
     });

@@ -1,3 +1,5 @@
+import { exec } from "child_process";
+
 import { DownloadOptions, UploadOptions } from "./options";
 
 export class ValidationError extends Error {
@@ -70,6 +72,39 @@ export async function saveCache(
     key: string,
     options?: UploadOptions
 ): Promise<number> {
+    console.log(JSON.stringify(process.env, null, 2));
+
+    return new Promise((resolve, reject) => {
+        // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
+        // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
+
+        const { stdout, stderr } = exec(
+            "cat *.js missing_file | wc -l",
+            (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`exec error: ${error}`);
+                    reject(error);
+                    return;
+                }
+                console.log(`stdout: ${stdout}`);
+                console.error(`stderr: ${stderr}`);
+                resolve(420);
+            }
+        );
+
+        if (stdout) {
+            stdout.on("data", data => {
+                console.log(`Received chunk ${data}`);
+            });
+        }
+
+        if (stderr) {
+            stderr.on("data", data => {
+                console.error(`Received error chunk ${data}`);
+            });
+        }
+    });
+
     console.log(JSON.stringify({ paths, key, options }));
     return Promise.resolve(420);
 }
