@@ -131,6 +131,8 @@ export async function restoreCache(
     );
 
     await streamOutputUntilResolved(createCacheDirPromise);
+
+    return foundKey;
 }
 
 /**

@@ -793,6 +793,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         // 2. if we found one, rsync it back to the HD
         const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, dirName)} ${paths[0]}`);
         yield streamOutputUntilResolved(createCacheDirPromise);
+        return foundKey;
     });
 }
 exports.restoreCache = restoreCache;
