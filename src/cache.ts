@@ -1,7 +1,12 @@
-import { exec } from "child_process";
+import { exec, PromiseWithChild } from "child_process";
+import { readdir } from "fs";
 import { join } from "path";
+import { promisify } from "util";
 
 import { DownloadOptions, UploadOptions } from "./options";
+
+const execAsync = promisify(exec);
+const readDirAsync = promisify(readdir);
 
 export class ValidationError extends Error {
     constructor(message: string) {
@@ -57,7 +62,86 @@ export async function restoreCache(
     options?: DownloadOptions
 ): Promise<string | undefined> {
     console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
-    return Promise.resolve("wohow");
+
+    const cacheDir = join(
+        `/media/cache/`,
+        process.env.GITHUB_REPOSITORY || "",
+        primaryKey
+    );
+
+    // 1. check if we find any dir that matches our keys from restoreKeys
+    const cacheDirs = await readDirAsync(cacheDir);
+
+    console.log({ cacheDirs });
+
+    let foundKey;
+    let foundDir;
+    for (const restoreKey of restoreKeys || [primaryKey]) {
+        for (const dir of cacheDirs) {
+            if (dir.indexOf(restoreKey) !== -1) {
+                foundDir = dir;
+                foundKey = restoreKey;
+            }
+        }
+    }
+
+    console.log({ foundKey, foundDir });
+
+    if (!foundKey) {
+        return undefined;
+    }
+
+    // 2. if we found one, rsync it back to the HD
+    return new Promise((resolve, reject) => {
+        const { stdout, stderr } = exec(
+            `rsync -ahm --delete --force --stats ${join(cacheDir, foundDir)} ${
+                paths[0]
+            }`,
+            (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`exec error: ${error}`);
+                    reject(error);
+                    return;
+                }
+                console.log(`stdout: ${stdout}`);
+                console.error(`stderr: ${stderr}`);
+                resolve(foundKey);
+            }
+        );
+
+        if (stdout) {
+            stdout.on("data", data => {
+                console.log(`Received chunk ${data}`);
+            });
+        }
+
+        if (stderr) {
+            stderr.on("data", data => {
+                console.error(`Received error chunk ${data}`);
+            });
+        }
+    });
+}
+
+async function streamOutputUntilResolved(
+    promise: PromiseWithChild<unknown>
+): Promise<unknown> {
+    const { child } = promise;
+    const { stdout, stderr } = child;
+
+    if (stdout) {
+        stdout.on("data", data => {
+            console.log(`Received chunk ${data}`);
+        });
+    }
+
+    if (stderr) {
+        stderr.on("data", data => {
+            console.error(`Received error chunk ${data}`);
+        });
+    }
+
+    return promise;
 }
 
 /**
@@ -77,44 +161,23 @@ export async function saveCache(
         JSON.stringify({ env: process.env, paths, key, options }, null, 2)
     );
 
-    return new Promise((resolve, reject) => {
-        // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
-        // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
-        const cacheDir = join(
-            `/media/cache/`,
-            process.env.GITHUB_REPOSITORY || "",
-            key
-        );
-        console.log(
-            "executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`"
-        );
-        const { stdout, stderr } = exec(
-            `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    reject(error);
-                    return;
-                }
-                console.log(`stdout: ${stdout}`);
-                console.error(`stderr: ${stderr}`);
-                resolve(420);
-            }
-        );
+    // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
+    // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
+    const cacheDir = join(
+        `/media/cache/`,
+        process.env.GITHUB_REPOSITORY || "",
+        key
+    );
 
-        if (stdout) {
-            stdout.on("data", data => {
-                console.log(`Received chunk ${data}`);
-            });
-        }
+    console.log(
+        "executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`"
+    );
 
-        if (stderr) {
-            stderr.on("data", data => {
-                console.error(`Received error chunk ${data}`);
-            });
-        }
-    });
+    const createCacheDirPromise = execAsync(
+        `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`
+    );
 
-    console.log(JSON.stringify({ paths, key, options }));
-    return Promise.resolve(420);
+    await streamOutputUntilResolved(createCacheDirPromise);
+
+    return 420;
 }

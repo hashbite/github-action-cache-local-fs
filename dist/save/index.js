@@ -585,6 +585,13 @@ module.exports = require("path");
 
 /***/ }),
 
+/***/ 669:
+/***/ (function(module) {
+
+module.exports = require("util");
+
+/***/ }),
+
 /***/ 681:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -694,7 +701,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveCache = exports.restoreCache = exports.ReserveCacheError = exports.ValidationError = void 0;
 const child_process_1 = __webpack_require__(129);
+const fs_1 = __webpack_require__(747);
 const path_1 = __webpack_require__(622);
+const util_1 = __webpack_require__(669);
+const execAsync = util_1.promisify(child_process_1.exec);
+const readDirAsync = util_1.promisify(fs_1.readdir);
 class ValidationError extends Error {
     constructor(message) {
         super(message);
@@ -737,27 +748,27 @@ function checkKey(key) {
 function restoreCache(paths, primaryKey, restoreKeys, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
-        return Promise.resolve("wohow");
-    });
-}
-exports.restoreCache = restoreCache;
-/**
- * Saves a list of files with the specified key
- *
- * @param paths a list of file paths to be cached
- * @param key an explicit key for restoring the cache
- * @param options cache upload options
- * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
- */
-function saveCache(paths, key, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
+        const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", primaryKey);
+        // 1. check if we find any dir that matches our keys from restoreKeys
+        const cacheDirs = yield readDirAsync(cacheDir);
+        console.log({ cacheDirs });
+        let foundKey;
+        let foundDir;
+        for (const restoreKey of restoreKeys || [primaryKey]) {
+            for (const dir of cacheDirs) {
+                if (dir.indexOf(restoreKey) !== -1) {
+                    foundDir = dir;
+                    foundKey = restoreKey;
+                }
+            }
+        }
+        console.log({ foundKey, foundDir });
+        if (!foundKey) {
+            return undefined;
+        }
+        // 2. if we found one, rsync it back to the HD
         return new Promise((resolve, reject) => {
-            // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
-            // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
-            const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", key);
-            console.log("executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`");
-            const { stdout, stderr } = child_process_1.exec(`mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`, (error, stdout, stderr) => {
+            const { stdout, stderr } = child_process_1.exec(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir)} ${paths[0]}`, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`exec error: ${error}`);
                     reject(error);
@@ -765,7 +776,7 @@ function saveCache(paths, key, options) {
                 }
                 console.log(`stdout: ${stdout}`);
                 console.error(`stderr: ${stderr}`);
-                resolve(420);
+                resolve(foundKey);
             });
             if (stdout) {
                 stdout.on("data", data => {
@@ -778,8 +789,44 @@ function saveCache(paths, key, options) {
                 });
             }
         });
-        console.log(JSON.stringify({ paths, key, options }));
-        return Promise.resolve(420);
+    });
+}
+exports.restoreCache = restoreCache;
+function streamOutputUntilResolved(promise) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { child } = promise;
+        const { stdout, stderr } = child;
+        if (stdout) {
+            stdout.on("data", data => {
+                console.log(`Received chunk ${data}`);
+            });
+        }
+        if (stderr) {
+            stderr.on("data", data => {
+                console.error(`Received error chunk ${data}`);
+            });
+        }
+        return promise;
+    });
+}
+/**
+ * Saves a list of files with the specified key
+ *
+ * @param paths a list of file paths to be cached
+ * @param key an explicit key for restoring the cache
+ * @param options cache upload options
+ * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
+ */
+function saveCache(paths, key, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
+        // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
+        // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
+        const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", key);
+        console.log("executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`");
+        const createCacheDirPromise = execAsync(`mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`);
+        yield streamOutputUntilResolved(createCacheDirPromise);
+        return 420;
     });
 }
 exports.saveCache = saveCache;
