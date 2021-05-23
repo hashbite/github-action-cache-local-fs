@@ -1,4 +1,5 @@
 import { exec } from "child_process";
+import { join } from "path";
 
 import { DownloadOptions, UploadOptions } from "./options";
 
@@ -72,14 +73,23 @@ export async function saveCache(
     key: string,
     options?: UploadOptions
 ): Promise<number> {
-    console.log(JSON.stringify(process.env, null, 2));
+    console.log(
+        JSON.stringify({ env: process.env, paths, key, options }, null, 2)
+    );
 
     return new Promise((resolve, reject) => {
         // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
         // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
-
+        const cacheDir = join(
+            `/media/cache/`,
+            process.env.GITHUB_REPOSITORY || "",
+            key
+        );
+        console.log(
+            "executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`"
+        );
         const { stdout, stderr } = exec(
-            "cat *.js missing_file | wc -l",
+            `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`,
             (error, stdout, stderr) => {
                 if (error) {
                     console.error(`exec error: ${error}`);
