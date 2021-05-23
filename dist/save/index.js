@@ -689,7 +689,7 @@ exports.saveCache = exports.restoreCache = exports.ReserveCacheError = exports.V
 class ValidationError extends Error {
     constructor(message) {
         super(message);
-        this.name = 'ValidationError';
+        this.name = "ValidationError";
         Object.setPrototypeOf(this, ValidationError.prototype);
     }
 }
@@ -697,7 +697,7 @@ exports.ValidationError = ValidationError;
 class ReserveCacheError extends Error {
     constructor(message) {
         super(message);
-        this.name = 'ReserveCacheError';
+        this.name = "ReserveCacheError";
         Object.setPrototypeOf(this, ReserveCacheError.prototype);
     }
 }
@@ -728,7 +728,7 @@ function checkKey(key) {
 function restoreCache(paths, primaryKey, restoreKeys, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
-        return Promise.resolve('wohow');
+        return Promise.resolve("wohow");
     });
 }
 exports.restoreCache = restoreCache;
