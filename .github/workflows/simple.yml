@@ -20,5 +20,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cache-${{ env.cache-name }}-
 
+      - name: Install
+        run: npm ci
+
       - name: Build
         run: npm run build
