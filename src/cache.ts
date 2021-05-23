@@ -1,41 +1,41 @@
-import {DownloadOptions, UploadOptions} from './options'
+import { DownloadOptions, UploadOptions } from "./options";
 
 export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ValidationError'
-    Object.setPrototypeOf(this, ValidationError.prototype)
-  }
+    constructor(message: string) {
+        super(message);
+        this.name = "ValidationError";
+        Object.setPrototypeOf(this, ValidationError.prototype);
+    }
 }
 
 export class ReserveCacheError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ReserveCacheError'
-    Object.setPrototypeOf(this, ReserveCacheError.prototype)
-  }
+    constructor(message: string) {
+        super(message);
+        this.name = "ReserveCacheError";
+        Object.setPrototypeOf(this, ReserveCacheError.prototype);
+    }
 }
 
 function checkPaths(paths: string[]): void {
-  if (!paths || paths.length === 0) {
-    throw new ValidationError(
-      `Path Validation Error: At least one directory or file path is required`
-    )
-  }
+    if (!paths || paths.length === 0) {
+        throw new ValidationError(
+            `Path Validation Error: At least one directory or file path is required`
+        );
+    }
 }
 
 function checkKey(key: string): void {
-  if (key.length > 512) {
-    throw new ValidationError(
-      `Key Validation Error: ${key} cannot be larger than 512 characters.`
-    )
-  }
-  const regex = /^[^,]*$/
-  if (!regex.test(key)) {
-    throw new ValidationError(
-      `Key Validation Error: ${key} cannot contain commas.`
-    )
-  }
+    if (key.length > 512) {
+        throw new ValidationError(
+            `Key Validation Error: ${key} cannot be larger than 512 characters.`
+        );
+    }
+    const regex = /^[^,]*$/;
+    if (!regex.test(key)) {
+        throw new ValidationError(
+            `Key Validation Error: ${key} cannot contain commas.`
+        );
+    }
 }
 
 /**
@@ -48,13 +48,13 @@ function checkKey(key: string): void {
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
 export async function restoreCache(
-  paths: string[],
-  primaryKey: string,
-  restoreKeys?: string[],
-  options?: DownloadOptions
+    paths: string[],
+    primaryKey: string,
+    restoreKeys?: string[],
+    options?: DownloadOptions
 ): Promise<string | undefined> {
-  console.log(JSON.stringify({paths, primaryKey, restoreKeys, options}))
-  return Promise.resolve('wohow')
+    console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
+    return Promise.resolve("wohow");
 }
 
 /**
@@ -66,10 +66,10 @@ export async function restoreCache(
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
 export async function saveCache(
-  paths: string[],
-  key: string,
-  options?: UploadOptions
+    paths: string[],
+    key: string,
+    options?: UploadOptions
 ): Promise<number> {
-    console.log(JSON.stringify({paths, key, options}))
-    return Promise.resolve(420)
+    console.log(JSON.stringify({ paths, key, options }));
+    return Promise.resolve(420);
 }
