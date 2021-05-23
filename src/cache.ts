@@ -63,11 +63,7 @@ export async function restoreCache(
 ): Promise<string | undefined> {
     console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
 
-    const cacheDir = join(
-        `/media/cache/`,
-        process.env.GITHUB_REPOSITORY || "",
-        primaryKey
-    );
+    const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
 
     // 1. check if we find any dir that matches our keys from restoreKeys
     const cacheDirs = await readDirAsync(cacheDir);
@@ -94,9 +90,11 @@ export async function restoreCache(
     // 2. if we found one, rsync it back to the HD
     return new Promise((resolve, reject) => {
         const { stdout, stderr } = exec(
-            `rsync -ahm --delete --force --stats ${join(cacheDir, foundDir)} ${
+            `rsync -ahm --delete --force --stats ${join(
+                cacheDir,
+                foundDir,
                 paths[0]
-            }`,
+            )} ${paths[0]}`,
             (error, stdout, stderr) => {
                 if (error) {
                     console.error(`exec error: ${error}`);
