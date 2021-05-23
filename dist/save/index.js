@@ -748,7 +748,7 @@ function checkKey(key) {
 function restoreCache(paths, primaryKey, restoreKeys, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
-        const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", primaryKey);
+        const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
         const cacheDirs = yield readDirAsync(cacheDir);
         console.log({ cacheDirs });
@@ -768,7 +768,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         }
         // 2. if we found one, rsync it back to the HD
         return new Promise((resolve, reject) => {
-            const { stdout, stderr } = child_process_1.exec(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir)} ${paths[0]}`, (error, stdout, stderr) => {
+            const { stdout, stderr } = child_process_1.exec(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, paths[0])} ${paths[0]}`, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`exec error: ${error}`);
                     reject(error);
