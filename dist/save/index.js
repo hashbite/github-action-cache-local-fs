@@ -767,6 +767,8 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
+        const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
+        yield streamOutputUntilResolved(mkdirPromise);
         const cacheDirs = yield readDirAsync(cacheDir);
         console.log({ cacheDirs });
         let foundKey;

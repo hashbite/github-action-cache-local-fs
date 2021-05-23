@@ -87,6 +87,11 @@ export async function restoreCache(
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
 
     // 1. check if we find any dir that matches our keys from restoreKeys
+
+    const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
+
+    await streamOutputUntilResolved(mkdirPromise);
+
     const cacheDirs = await readDirAsync(cacheDir);
 
     console.log({ cacheDirs });
