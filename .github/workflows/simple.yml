@@ -14,6 +14,8 @@ jobs:
 
       - uses: hashbite/github-action-rsync-cache@main
         id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+        env:
+          cache-name: node-modules
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-cache-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
