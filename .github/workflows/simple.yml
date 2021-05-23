@@ -5,6 +5,11 @@ jobs:
     name: Build
     runs-on: [self-hosted, linux, x64]
     steps:
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: |
+          echo "::set-output name=dir::$(npm config get cache)"
+
       - uses: actions/checkout@v2
 
       - uses: hashbite/github-action-rsync-cache@main
