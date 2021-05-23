@@ -8,6 +8,10 @@ import { DownloadOptions, UploadOptions } from "./options";
 const execAsync = promisify(exec);
 const readDirAsync = promisify(readdir);
 
+function generateCacheDirName(path: string): string {
+    return path.replace(/[^a-z0-9]/gi, "_");
+}
+
 export class ValidationError extends Error {
     constructor(message: string) {
         super(message);
@@ -113,12 +117,16 @@ export async function restoreCache(
         return undefined;
     }
 
+    const dirName = generateCacheDirName(paths[0]);
+
+    console.log({ dirName });
+
     // 2. if we found one, rsync it back to the HD
     const createCacheDirPromise = execAsync(
         `rsync -ahm --delete --force --stats ${join(
             cacheDir,
             foundDir,
-            paths[0]
+            dirName
         )} ${paths[0]}`
     );
 
@@ -148,8 +156,13 @@ export async function saveCache(
         key
     );
 
+    const dirName = generateCacheDirName(paths[0]);
+    console.log({ dirName });
+
     const createCacheDirPromise = execAsync(
-        `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`
+        `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${
+            paths[0]
+        }/ ${join(cacheDir, dirName)}`
     );
 
     await streamOutputUntilResolved(createCacheDirPromise);

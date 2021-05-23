@@ -614,6 +614,9 @@ const path_1 = __webpack_require__(622);
 const util_1 = __webpack_require__(669);
 const execAsync = util_1.promisify(child_process_1.exec);
 const readDirAsync = util_1.promisify(fs_1.readdir);
+function generateCacheDirName(path) {
+    return path.replace(/[^a-z0-9]/gi, "_");
+}
 class ValidationError extends Error {
     constructor(message) {
         super(message);
@@ -693,8 +696,10 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         if (!foundKey) {
             return undefined;
         }
+        const dirName = generateCacheDirName(paths[0]);
+        console.log({ dirName });
         // 2. if we found one, rsync it back to the HD
-        const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, paths[0])} ${paths[0]}`);
+        const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, dirName)} ${paths[0]}`);
         yield streamOutputUntilResolved(createCacheDirPromise);
     });
 }
@@ -711,7 +716,9 @@ function saveCache(paths, key, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", key);
-        const createCacheDirPromise = execAsync(`mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`);
+        const dirName = generateCacheDirName(paths[0]);
+        console.log({ dirName });
+        const createCacheDirPromise = execAsync(`mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]}/ ${path_1.join(cacheDir, dirName)}`);
         yield streamOutputUntilResolved(createCacheDirPromise);
         return 420;
     });
