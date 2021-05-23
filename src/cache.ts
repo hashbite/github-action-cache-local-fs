@@ -46,6 +46,27 @@ function checkKey(key: string): void {
     }
 }
 
+async function streamOutputUntilResolved(
+    promise: PromiseWithChild<unknown>
+): Promise<unknown> {
+    const { child } = promise;
+    const { stdout, stderr } = child;
+
+    if (stdout) {
+        stdout.on("data", data => {
+            console.log(`Received chunk ${data}`);
+        });
+    }
+
+    if (stderr) {
+        stderr.on("data", data => {
+            console.error(`Received error chunk ${data}`);
+        });
+    }
+
+    return promise;
+}
+
 /**
  * Restores cache from keys
  *
@@ -88,58 +109,15 @@ export async function restoreCache(
     }
 
     // 2. if we found one, rsync it back to the HD
-    return new Promise((resolve, reject) => {
-        const { stdout, stderr } = exec(
-            `rsync -ahm --delete --force --stats ${join(
-                cacheDir,
-                foundDir,
-                paths[0]
-            )} ${paths[0]}`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    reject(error);
-                    return;
-                }
-                console.log(`stdout: ${stdout}`);
-                console.error(`stderr: ${stderr}`);
-                resolve(foundKey);
-            }
-        );
+    const createCacheDirPromise = execAsync(
+        `rsync -ahm --delete --force --stats ${join(
+            cacheDir,
+            foundDir,
+            paths[0]
+        )} ${paths[0]}`
+    );
 
-        if (stdout) {
-            stdout.on("data", data => {
-                console.log(`Received chunk ${data}`);
-            });
-        }
-
-        if (stderr) {
-            stderr.on("data", data => {
-                console.error(`Received error chunk ${data}`);
-            });
-        }
-    });
-}
-
-async function streamOutputUntilResolved(
-    promise: PromiseWithChild<unknown>
-): Promise<unknown> {
-    const { child } = promise;
-    const { stdout, stderr } = child;
-
-    if (stdout) {
-        stdout.on("data", data => {
-            console.log(`Received chunk ${data}`);
-        });
-    }
-
-    if (stderr) {
-        stderr.on("data", data => {
-            console.error(`Received error chunk ${data}`);
-        });
-    }
-
-    return promise;
+    await streamOutputUntilResolved(createCacheDirPromise);
 }
 
 /**
@@ -159,16 +137,10 @@ export async function saveCache(
         JSON.stringify({ env: process.env, paths, key, options }, null, 2)
     );
 
-    // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
-    // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
     const cacheDir = join(
         `/media/cache/`,
         process.env.GITHUB_REPOSITORY || "",
         key
-    );
-
-    console.log(
-        "executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`"
     );
 
     const createCacheDirPromise = execAsync(

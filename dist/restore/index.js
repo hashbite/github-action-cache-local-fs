@@ -644,6 +644,23 @@ function checkKey(key) {
         throw new ValidationError(`Key Validation Error: ${key} cannot contain commas.`);
     }
 }
+function streamOutputUntilResolved(promise) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { child } = promise;
+        const { stdout, stderr } = child;
+        if (stdout) {
+            stdout.on("data", data => {
+                console.log(`Received chunk ${data}`);
+            });
+        }
+        if (stderr) {
+            stderr.on("data", data => {
+                console.error(`Received error chunk ${data}`);
+            });
+        }
+        return promise;
+    });
+}
 /**
  * Restores cache from keys
  *
@@ -675,48 +692,11 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
             return undefined;
         }
         // 2. if we found one, rsync it back to the HD
-        return new Promise((resolve, reject) => {
-            const { stdout, stderr } = child_process_1.exec(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, paths[0])} ${paths[0]}`, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    reject(error);
-                    return;
-                }
-                console.log(`stdout: ${stdout}`);
-                console.error(`stderr: ${stderr}`);
-                resolve(foundKey);
-            });
-            if (stdout) {
-                stdout.on("data", data => {
-                    console.log(`Received chunk ${data}`);
-                });
-            }
-            if (stderr) {
-                stderr.on("data", data => {
-                    console.error(`Received error chunk ${data}`);
-                });
-            }
-        });
+        const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, paths[0])} ${paths[0]}`);
+        yield streamOutputUntilResolved(createCacheDirPromise);
     });
 }
 exports.restoreCache = restoreCache;
-function streamOutputUntilResolved(promise) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { child } = promise;
-        const { stdout, stderr } = child;
-        if (stdout) {
-            stdout.on("data", data => {
-                console.log(`Received chunk ${data}`);
-            });
-        }
-        if (stderr) {
-            stderr.on("data", data => {
-                console.error(`Received error chunk ${data}`);
-            });
-        }
-        return promise;
-    });
-}
 /**
  * Saves a list of files with the specified key
  *
@@ -728,10 +708,7 @@ function streamOutputUntilResolved(promise) {
 function saveCache(paths, key, options) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
-        // run: '[ -d "/media/cache/${{ github.repository }}/${{ github.ref }}/public/" ] && rsync -ahm --delete --force --stats /media/cache/${{ github.repository }}/${{ github.ref }}/public/ ./public || echo "cache does not exist yet"'
-        // run: mkdir -p /media/cache/${{ github.repository }}/${{ github.ref }}/public && rsync -ahm --delete --force --stats ./public /media/cache/${{ github.repository }}/${{ github.ref }}/public
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", key);
-        console.log("executing: `mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`");
         const createCacheDirPromise = execAsync(`mkdir -p ${cacheDir} && rsync -ahm --delete --force --stats ${paths[0]} ${cacheDir}`);
         yield streamOutputUntilResolved(createCacheDirPromise);
         return 420;
