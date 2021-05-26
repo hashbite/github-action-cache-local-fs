@@ -20,14 +20,6 @@ export class ValidationError extends Error {
     }
 }
 
-export class ReserveCacheError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "ReserveCacheError";
-        Object.setPrototypeOf(this, ReserveCacheError.prototype);
-    }
-}
-
 function checkPaths(paths: string[]): void {
     if (!paths || paths.length === 0) {
         throw new ValidationError(
@@ -71,6 +63,17 @@ async function streamOutputUntilResolved(
     return promise;
 }
 
+function locateCacheDir(keys, dirs): { dir: string; key: string } | boolean {
+    for (const key of keys) {
+        for (const dir of dirs) {
+            if (dir.indexOf(key) !== -1) {
+                return { dir, key };
+            }
+        }
+    }
+    return false;
+}
+
 /**
  * Restores cache from keys
  *
@@ -86,6 +89,9 @@ export async function restoreCache(
     restoreKeys?: string[],
     options?: DownloadOptions
 ): Promise<string | undefined> {
+    checkKey(primaryKey);
+    checkPaths(paths);
+
     console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
 
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
@@ -100,39 +106,26 @@ export async function restoreCache(
 
     console.log({ cacheDirs });
 
-    let foundKey;
-    let foundDir;
-    for (const restoreKey of restoreKeys || [primaryKey]) {
-        for (const dir of cacheDirs) {
-            if (dir.indexOf(restoreKey) !== -1) {
-                foundDir = dir;
-                foundKey = restoreKey;
-            }
-        }
-    }
+    const result = locateCacheDir(primaryKey || [primaryKey], cacheDirs);
 
-    console.log({ foundKey, foundDir });
-
-    if (!foundKey) {
+    if (typeof result !== "object") {
         return undefined;
     }
 
-    const dirName = generateCacheDirName(paths[0]);
+    const { key, dir } = result;
 
-    console.log({ dirName });
+    const dirName = generateCacheDirName(paths[0]);
 
     // 2. if we found one, rsync it back to the HD
     const createCacheDirPromise = execAsync(
-        `rsync -ahm --delete --force --stats ${join(
-            cacheDir,
-            foundDir,
-            dirName
-        )} ${paths[0]}`
+        `rsync -ahm --delete --force --stats ${join(cacheDir, dir, dirName)} ${
+            paths[0]
+        }`
     );
 
     await streamOutputUntilResolved(createCacheDirPromise);
 
-    return foundKey;
+    return key;
 }
 
 /**
@@ -148,6 +141,9 @@ export async function saveCache(
     key: string,
     options?: UploadOptions
 ): Promise<number> {
+    checkPaths(paths);
+    checkKey(key);
+
     console.log(
         JSON.stringify({ env: process.env, paths, key, options }, null, 2)
     );
