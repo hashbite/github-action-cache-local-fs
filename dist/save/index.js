@@ -786,7 +786,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         yield streamOutputUntilResolved(mkdirPromise);
         const cacheDirs = yield readDirAsync(cacheDir);
         console.log({ cacheDirs });
-        const result = locateCacheDir(primaryKey || [primaryKey], cacheDirs);
+        const result = locateCacheDir(restoreKeys || [primaryKey], cacheDirs);
         if (typeof result !== "object") {
             return undefined;
         }
