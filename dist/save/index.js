@@ -699,7 +699,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveCache = exports.restoreCache = exports.ReserveCacheError = exports.ValidationError = void 0;
+exports.saveCache = exports.restoreCache = exports.ValidationError = exports.ReserveCacheError = void 0;
 const child_process_1 = __webpack_require__(129);
 const fs_1 = __webpack_require__(747);
 const path_1 = __webpack_require__(622);
@@ -709,14 +709,6 @@ const readDirAsync = util_1.promisify(fs_1.readdir);
 function generateCacheDirName(path) {
     return path.replace(/[^a-z0-9]/gi, "_");
 }
-class ValidationError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = "ValidationError";
-        Object.setPrototypeOf(this, ValidationError.prototype);
-    }
-}
-exports.ValidationError = ValidationError;
 class ReserveCacheError extends Error {
     constructor(message) {
         super(message);
@@ -725,6 +717,14 @@ class ReserveCacheError extends Error {
     }
 }
 exports.ReserveCacheError = ReserveCacheError;
+class ValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "ValidationError";
+        Object.setPrototypeOf(this, ValidationError.prototype);
+    }
+}
+exports.ValidationError = ValidationError;
 function checkPaths(paths) {
     if (!paths || paths.length === 0) {
         throw new ValidationError(`Path Validation Error: At least one directory or file path is required`);
@@ -756,6 +756,16 @@ function streamOutputUntilResolved(promise) {
         return promise;
     });
 }
+function locateCacheDir(keys, dirs) {
+    for (const key of keys) {
+        for (const dir of dirs) {
+            if (dir.indexOf(key) !== -1) {
+                return { dir, key };
+            }
+        }
+    }
+    return false;
+}
 /**
  * Restores cache from keys
  *
@@ -767,6 +777,8 @@ function streamOutputUntilResolved(promise) {
  */
 function restoreCache(paths, primaryKey, restoreKeys, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        checkKey(primaryKey);
+        checkPaths(paths);
         console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
@@ -774,26 +786,16 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         yield streamOutputUntilResolved(mkdirPromise);
         const cacheDirs = yield readDirAsync(cacheDir);
         console.log({ cacheDirs });
-        let foundKey;
-        let foundDir;
-        for (const restoreKey of restoreKeys || [primaryKey]) {
-            for (const dir of cacheDirs) {
-                if (dir.indexOf(restoreKey) !== -1) {
-                    foundDir = dir;
-                    foundKey = restoreKey;
-                }
-            }
-        }
-        console.log({ foundKey, foundDir });
-        if (!foundKey) {
+        const result = locateCacheDir(primaryKey || [primaryKey], cacheDirs);
+        if (typeof result !== "object") {
             return undefined;
         }
+        const { key, dir } = result;
         const dirName = generateCacheDirName(paths[0]);
-        console.log({ dirName });
         // 2. if we found one, rsync it back to the HD
-        const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, foundDir, dirName)} ${paths[0]}`);
+        const createCacheDirPromise = execAsync(`rsync -ahm --delete --force --stats ${path_1.join(cacheDir, dir, dirName)} ${paths[0]}`);
         yield streamOutputUntilResolved(createCacheDirPromise);
-        return foundKey;
+        return key;
     });
 }
 exports.restoreCache = restoreCache;
@@ -807,6 +809,8 @@ exports.restoreCache = restoreCache;
  */
 function saveCache(paths, key, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        checkPaths(paths);
+        checkKey(key);
         console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "", key);
         const dirName = generateCacheDirName(paths[0]);

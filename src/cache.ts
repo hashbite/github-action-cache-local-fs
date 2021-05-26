@@ -12,6 +12,14 @@ function generateCacheDirName(path: string): string {
     return path.replace(/[^a-z0-9]/gi, "_");
 }
 
+export class ReserveCacheError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ReserveCacheError";
+        Object.setPrototypeOf(this, ReserveCacheError.prototype);
+    }
+}
+
 export class ValidationError extends Error {
     constructor(message: string) {
         super(message);
