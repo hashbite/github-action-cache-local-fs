@@ -12,6 +12,9 @@ jobs:
 
       - uses: actions/checkout@v2
 
+      - name: rm dist for demonstration purposes
+        run: rm -rf ./dist
+
       - name: show disk usage
         run: du -h -d 2 .
 
