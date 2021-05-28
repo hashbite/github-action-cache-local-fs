@@ -756,11 +756,12 @@ function streamOutputUntilResolved(promise) {
         return promise;
     });
 }
-function locateCache(potentialCaches, caches) {
+function locateCache(potentialCaches, cacheFiles) {
     for (const potentialCache of potentialCaches) {
-        for (const cache of caches) {
-            if (cache.indexOf(potentialCache) !== -1) {
-                return { cache, key: potentialCache };
+        for (const cacheFile of cacheFiles) {
+            console.log({ cacheFile, potentialCache });
+            if (cacheFile.indexOf(potentialCache) !== -1) {
+                return { cache: cacheFile, key: potentialCache };
             }
         }
     }
@@ -783,17 +784,19 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
         const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
+        // @todo order files by name/date
         yield streamOutputUntilResolved(mkdirPromise);
-        const caches = yield readDirAsync(cacheDir);
-        console.log({ caches });
+        const cacheFiles = yield readDirAsync(cacheDir);
+        console.log({ caches: cacheFiles });
         const potentialCaches = (restoreKeys || [primaryKey]).map(generateCacheName);
-        const result = locateCache(potentialCaches, caches);
+        const result = locateCache(potentialCaches, cacheFiles);
         if (typeof result !== "object") {
             return undefined;
         }
         const { key, cache } = result;
         const cachePath = path_1.join(cacheDir, cache);
         const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${path_1.dirname(paths[0])}`;
+        // --skip-old-files
         console.log({ cacheDir, cache, cachePath, key, cmd });
         // 2. if we found one, rsync it back to the HD
         const createCacheDirPromise = execAsync(cmd);

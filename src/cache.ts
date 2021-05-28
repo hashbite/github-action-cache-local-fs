@@ -73,12 +73,13 @@ async function streamOutputUntilResolved(
 
 function locateCache(
     potentialCaches,
-    caches
+    cacheFiles
 ): { cache: string; key: string } | boolean {
     for (const potentialCache of potentialCaches) {
-        for (const cache of caches) {
-            if (cache.indexOf(potentialCache) !== -1) {
-                return { cache, key: potentialCache };
+        for (const cacheFile of cacheFiles) {
+            console.log({ cacheFile, potentialCache });
+            if (cacheFile.indexOf(potentialCache) !== -1) {
+                return { cache: cacheFile, key: potentialCache };
             }
         }
     }
@@ -111,17 +112,19 @@ export async function restoreCache(
 
     const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
 
+    // @todo order files by name/date
+
     await streamOutputUntilResolved(mkdirPromise);
 
-    const caches = await readDirAsync(cacheDir);
+    const cacheFiles = await readDirAsync(cacheDir);
 
-    console.log({ caches });
+    console.log({ caches: cacheFiles });
 
     const potentialCaches = (restoreKeys || [primaryKey]).map(
         generateCacheName
     );
 
-    const result = locateCache(potentialCaches, caches);
+    const result = locateCache(potentialCaches, cacheFiles);
 
     if (typeof result !== "object") {
         return undefined;
@@ -132,6 +135,8 @@ export async function restoreCache(
     const cachePath = join(cacheDir, cache);
 
     const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${dirname(paths[0])}`;
+
+    // --skip-old-files
 
     console.log({ cacheDir, cache, cachePath, key, cmd });
 
