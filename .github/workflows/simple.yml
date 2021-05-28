@@ -12,7 +12,7 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - uses: hashbite/github-action-rsync-cache@main
+      - uses: ./
         id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
         env:
           cache-name: node-modules
