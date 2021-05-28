@@ -1,4 +1,5 @@
 import { exec, PromiseWithChild } from "child_process";
+import filenamify from "filenamify";
 import { readdir } from "fs";
 import { dirname, join } from "path";
 import { promisify } from "util";
@@ -7,10 +8,6 @@ import { DownloadOptions, UploadOptions } from "./options";
 
 const execAsync = promisify(exec);
 const readDirAsync = promisify(readdir);
-
-function generateCacheName(path: string): string {
-    return path.replace(/[^a-z0-9]/gi, "_");
-}
 
 export class ReserveCacheError extends Error {
     constructor(message: string) {
@@ -37,9 +34,9 @@ function checkPaths(paths: string[]): void {
 }
 
 function checkKey(key: string): void {
-    if (key.length > 512) {
+    if (key.length > 255) {
         throw new ValidationError(
-            `Key Validation Error: ${key} cannot be larger than 512 characters.`
+            `Key Validation Error: ${key} cannot be larger than 255 characters.`
         );
     }
     const regex = /^[^,]*$/;
@@ -118,8 +115,8 @@ export async function restoreCache(
 
     const cacheFiles = await readDirAsync(cacheDir);
 
-    const potentialCaches = (restoreKeys || [primaryKey]).map(
-        generateCacheName
+    const potentialCaches = (restoreKeys || [primaryKey]).map(key =>
+        filenamify(key)
     );
 
     console.log({ cacheFiles, potentialCaches });
@@ -175,7 +172,7 @@ export async function saveCache(
     );
 
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
-    const cacheName = `${generateCacheName(key)}.tar.lz4`;
+    const cacheName = `${filenamify(key)}.tar.lz4`;
     const cachePath = join(cacheDir, cacheName);
 
     const cmd = `mkdir -p ${cacheDir} && tar cf - ${paths.join(

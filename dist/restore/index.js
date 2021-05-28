@@ -69,6 +69,22 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
+/***/ 83:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const filenamify = __webpack_require__(356);
+const filenamifyPath = __webpack_require__(244);
+
+const filenamifyCombined = filenamify;
+filenamifyCombined.path = filenamifyPath;
+
+module.exports = filenamify;
+
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
@@ -119,6 +135,25 @@ module.exports = require("child_process");
 
 /***/ }),
 
+/***/ 138:
+/***/ (function(module) {
+
+"use strict";
+
+
+var matchOperatorsRe = /[|\\{}()[\]^$+*?.]/g;
+
+module.exports = function (str) {
+	if (typeof str !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	return str.replace(matchOperatorsRe, '\\$&');
+};
+
+
+/***/ }),
+
 /***/ 211:
 /***/ (function(__unusedmodule, exports) {
 
@@ -149,6 +184,72 @@ var Events;
     Events["PullRequest"] = "pull_request";
 })(Events = exports.Events || (exports.Events = {}));
 exports.RefKey = "GITHUB_REF";
+
+
+/***/ }),
+
+/***/ 244:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const path = __webpack_require__(622);
+const filenamify = __webpack_require__(356);
+
+const filenamifyPath = (filePath, options) => {
+	filePath = path.resolve(filePath);
+	return path.join(path.dirname(filePath), filenamify(path.basename(filePath), options));
+};
+
+module.exports = filenamifyPath;
+
+
+/***/ }),
+
+/***/ 356:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const trimRepeated = __webpack_require__(567);
+const filenameReservedRegex = __webpack_require__(634);
+const stripOuter = __webpack_require__(448);
+
+// Doesn't make sense to have longer filenames
+const MAX_FILENAME_LENGTH = 100;
+
+const reControlChars = /[\u0000-\u001f\u0080-\u009f]/g; // eslint-disable-line no-control-regex
+const reRelativePath = /^\.+/;
+const reTrailingPeriods = /\.+$/;
+
+const filenamify = (string, options = {}) => {
+	if (typeof string !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	const replacement = options.replacement === undefined ? '!' : options.replacement;
+
+	if (filenameReservedRegex().test(replacement) && reControlChars.test(replacement)) {
+		throw new Error('Replacement string cannot contain reserved filename characters');
+	}
+
+	string = string.replace(filenameReservedRegex(), replacement);
+	string = string.replace(reControlChars, replacement);
+	string = string.replace(reRelativePath, replacement);
+	string = string.replace(reTrailingPeriods, '');
+
+	if (replacement.length > 0) {
+		string = trimRepeated(string, replacement);
+		string = string.length > 1 ? stripOuter(string, replacement) : string;
+	}
+
+	string = filenameReservedRegex.windowsNames().test(string) ? string + replacement : string;
+	string = string.slice(0, typeof options.maxLength === 'number' ? options.maxLength : MAX_FILENAME_LENGTH);
+
+	return string;
+};
+
+module.exports = filenamify;
 
 
 /***/ }),
@@ -329,6 +430,25 @@ function getInputAsInt(name, options) {
     return value;
 }
 exports.getInputAsInt = getInputAsInt;
+
+
+/***/ }),
+
+/***/ 448:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+var escapeStringRegexp = __webpack_require__(138);
+
+module.exports = function (str, sub) {
+	if (typeof str !== 'string' || typeof sub !== 'string') {
+		throw new TypeError();
+	}
+
+	sub = escapeStringRegexp(sub);
+	return str.replace(new RegExp('^' + sub + '|' + sub + '$', 'g'), '');
+};
 
 
 /***/ }),
@@ -578,10 +698,41 @@ exports.getState = getState;
 
 /***/ }),
 
+/***/ 567:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+var escapeStringRegexp = __webpack_require__(138);
+
+module.exports = function (str, target) {
+	if (typeof str !== 'string' || typeof target !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	return str.replace(new RegExp('(?:' + escapeStringRegexp(target) + '){2,}', 'g'), target);
+};
+
+
+/***/ }),
+
 /***/ 622:
 /***/ (function(module) {
 
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 634:
+/***/ (function(module) {
+
+"use strict";
+
+/* eslint-disable no-control-regex */
+// TODO: remove parens when Node.js 6 is targeted. Node.js 4 barfs at it.
+module.exports = () => (/[<>:"\/\\|?*\x00-\x1F]/g);
+module.exports.windowsNames = () => (/^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i);
+
 
 /***/ }),
 
@@ -606,17 +757,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveCache = exports.restoreCache = exports.ValidationError = exports.ReserveCacheError = void 0;
 const child_process_1 = __webpack_require__(129);
+const filenamify_1 = __importDefault(__webpack_require__(83));
 const fs_1 = __webpack_require__(747);
 const path_1 = __webpack_require__(622);
 const util_1 = __webpack_require__(669);
 const execAsync = util_1.promisify(child_process_1.exec);
 const readDirAsync = util_1.promisify(fs_1.readdir);
-function generateCacheName(path) {
-    return path.replace(/[^a-z0-9]/gi, "_");
-}
 class ReserveCacheError extends Error {
     constructor(message) {
         super(message);
@@ -639,8 +791,8 @@ function checkPaths(paths) {
     }
 }
 function checkKey(key) {
-    if (key.length > 512) {
-        throw new ValidationError(`Key Validation Error: ${key} cannot be larger than 512 characters.`);
+    if (key.length > 255) {
+        throw new ValidationError(`Key Validation Error: ${key} cannot be larger than 255 characters.`);
     }
     const regex = /^[^,]*$/;
     if (!regex.test(key)) {
@@ -695,7 +847,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         // @todo order files by name/date
         yield streamOutputUntilResolved(mkdirPromise);
         const cacheFiles = yield readDirAsync(cacheDir);
-        const potentialCaches = (restoreKeys || [primaryKey]).map(generateCacheName);
+        const potentialCaches = (restoreKeys || [primaryKey]).map(key => filenamify_1.default(key));
         console.log({ cacheFiles, potentialCaches });
         const result = locateCache(potentialCaches, cacheFiles);
         if (typeof result !== "object") {
@@ -733,7 +885,7 @@ function saveCache(paths, key, options) {
         checkKey(key);
         console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
-        const cacheName = `${generateCacheName(key)}.tar.lz4`;
+        const cacheName = `${filenamify_1.default(key)}.tar.lz4`;
         const cachePath = path_1.join(cacheDir, cacheName);
         const cmd = `mkdir -p ${cacheDir} && tar cf - ${paths.join(" ")} | lz4 -v > ${cachePath}`;
         console.log({ cacheDir, cacheName, cachePath, cmd });
