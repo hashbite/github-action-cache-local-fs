@@ -15,8 +15,11 @@ jobs:
       - name: rm dist for demonstration purposes
         run: rm -rf ./dist
 
-      - name: show disk usage
+      - name: show project root disk usage
         run: du -h -d 2 .
+
+      - name: show npm cache disk usage
+        run: du -h -d 2 ${{ steps.npm-cache-dir.outputs.dir }}
 
       - uses: ./
         name: "cache node-modules (absolute example)"
@@ -42,8 +45,11 @@ jobs:
             ${{ runner.os }}-cache-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
             ${{ runner.os }}-cache-${{ env.cache-name }}-
 
-      - name: show disk usage
+      - name: show project root disk usage
         run: du -h -d 2 .
+
+      - name: show npm cache disk usage
+        run: du -h -d 2 ${{ steps.npm-cache-dir.outputs.dir }}
 
       - name: Install
         run: npm ci
