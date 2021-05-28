@@ -692,17 +692,25 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
         const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
+        // @todo order files by name/date
         yield streamOutputUntilResolved(mkdirPromise);
         const cacheFiles = yield readDirAsync(cacheDir);
-        console.log({ caches: cacheFiles });
         const potentialCaches = (restoreKeys || [primaryKey]).map(generateCacheName);
+        console.log({ cacheFiles, potentialCaches });
         const result = locateCache(potentialCaches, cacheFiles);
         if (typeof result !== "object") {
+            console.log("Unable to locate fitting cache file", {
+                cacheFiles,
+                potentialCaches,
+                restoreKeys,
+                primaryKey
+            });
             return undefined;
         }
         const { key, cache } = result;
         const cachePath = path_1.join(cacheDir, cache);
         const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${path_1.dirname(paths[0])}`;
+        // --skip-old-files
         console.log({ cacheDir, cache, cachePath, key, cmd });
         // 2. if we found one, rsync it back to the HD
         const createCacheDirPromise = execAsync(cmd);

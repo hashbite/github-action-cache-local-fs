@@ -787,10 +787,16 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         // @todo order files by name/date
         yield streamOutputUntilResolved(mkdirPromise);
         const cacheFiles = yield readDirAsync(cacheDir);
-        console.log({ caches: cacheFiles });
         const potentialCaches = (restoreKeys || [primaryKey]).map(generateCacheName);
+        console.log({ cacheFiles, potentialCaches });
         const result = locateCache(potentialCaches, cacheFiles);
         if (typeof result !== "object") {
+            console.log("Unable to locate fitting cache file", {
+                cacheFiles,
+                potentialCaches,
+                restoreKeys,
+                primaryKey
+            });
             return undefined;
         }
         const { key, cache } = result;

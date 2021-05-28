@@ -118,15 +118,21 @@ export async function restoreCache(
 
     const cacheFiles = await readDirAsync(cacheDir);
 
-    console.log({ caches: cacheFiles });
-
     const potentialCaches = (restoreKeys || [primaryKey]).map(
         generateCacheName
     );
 
+    console.log({ cacheFiles, potentialCaches });
+
     const result = locateCache(potentialCaches, cacheFiles);
 
     if (typeof result !== "object") {
+        console.log("Unable to locate fitting cache file", {
+            cacheFiles,
+            potentialCaches,
+            restoreKeys,
+            primaryKey
+        });
         return undefined;
     }
 
