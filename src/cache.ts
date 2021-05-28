@@ -115,9 +115,10 @@ export async function restoreCache(
 
     const cacheFiles = await readDirAsync(cacheDir);
 
-    const potentialCaches = (restoreKeys || [primaryKey]).map(key =>
-        filenamify(key)
-    );
+    const potentialCaches = (Array.isArray(restoreKeys) && restoreKeys.length
+        ? restoreKeys
+        : [primaryKey]
+    ).map(key => filenamify(key));
 
     console.log({ cacheFiles, potentialCaches });
 
