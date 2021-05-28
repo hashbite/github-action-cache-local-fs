@@ -793,8 +793,8 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         }
         const { key, cache } = result;
         const cachePath = path_1.join(cacheDir, cache);
-        const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ./${path_1.dirname(paths[0])}`;
-        console.log({ cacheDir, cache, cachePath, key });
+        const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${path_1.dirname(paths[0])}`;
+        console.log({ cacheDir, cache, cachePath, key, cmd });
         // 2. if we found one, rsync it back to the HD
         const createCacheDirPromise = execAsync(cmd);
         yield streamOutputUntilResolved(createCacheDirPromise);
