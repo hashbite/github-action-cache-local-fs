@@ -131,11 +131,9 @@ export async function restoreCache(
 
     const cachePath = join(cacheDir, cache);
 
-    const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ./${dirname(
-        paths[0]
-    )}`;
+    const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${dirname(paths[0])}`;
 
-    console.log({ cacheDir, cache, cachePath, key });
+    console.log({ cacheDir, cache, cachePath, key, cmd });
 
     // 2. if we found one, rsync it back to the HD
     const createCacheDirPromise = execAsync(cmd);
