@@ -1,5 +1,5 @@
 on: push
-name: Local FS Test
+name: Custom file-system test
 jobs:
   build:
     name: Build
