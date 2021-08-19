@@ -1,5 +1,5 @@
 on: push
-name: Rsync Test
+name: Local FS Test
 jobs:
   build:
     name: Build
