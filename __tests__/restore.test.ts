@@ -1,6 +1,6 @@
-import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 
+import * as cache from "../src/cache";
 import { Events, Inputs, RefKey } from "../src/constants";
 import run from "../src/restore";
 import * as actionUtils from "../src/utils/actionUtils";
@@ -91,42 +91,6 @@ test("restore with no key", async () => {
     expect(restoreCacheMock).toHaveBeenCalledTimes(0);
     expect(failedMock).toHaveBeenCalledWith(
         "Input required and not supplied: key"
-    );
-});
-
-test("restore with too many keys should fail", async () => {
-    const path = "node_modules";
-    const key = "node-test";
-    const restoreKeys = [...Array(20).keys()].map(x => x.toString());
-    testUtils.setInputs({
-        path: path,
-        key,
-        restoreKeys
-    });
-    const failedMock = jest.spyOn(core, "setFailed");
-    const restoreCacheMock = jest.spyOn(cache, "restoreCache");
-    await run();
-    expect(restoreCacheMock).toHaveBeenCalledTimes(1);
-    expect(restoreCacheMock).toHaveBeenCalledWith([path], key, restoreKeys);
-    expect(failedMock).toHaveBeenCalledWith(
-        `Key Validation Error: Keys are limited to a maximum of 10.`
-    );
-});
-
-test("restore with large key should fail", async () => {
-    const path = "node_modules";
-    const key = "foo".repeat(512); // Over the 512 character limit
-    testUtils.setInputs({
-        path: path,
-        key
-    });
-    const failedMock = jest.spyOn(core, "setFailed");
-    const restoreCacheMock = jest.spyOn(cache, "restoreCache");
-    await run();
-    expect(restoreCacheMock).toHaveBeenCalledTimes(1);
-    expect(restoreCacheMock).toHaveBeenCalledWith([path], key, []);
-    expect(failedMock).toHaveBeenCalledWith(
-        `Key Validation Error: ${key} cannot be larger than 512 characters.`
     );
 });
 
