@@ -61,6 +61,9 @@ async function streamOutputUntilResolved(
 
     if (stderr) {
         stderr.on("data", data => {
+            if (!data) {
+                return;
+            }
             console.error(`Received error chunk ${data}`);
         });
     }
