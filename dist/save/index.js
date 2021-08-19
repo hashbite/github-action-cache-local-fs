@@ -911,7 +911,6 @@ function streamOutputUntilResolved(promise) {
 function locateCache(potentialCaches, cacheFiles) {
     for (const potentialCache of potentialCaches) {
         for (const cacheFile of cacheFiles) {
-            console.log({ cacheFile, potentialCache });
             if (cacheFile.indexOf(potentialCache) !== -1) {
                 return { cache: cacheFile, key: potentialCache };
             }
@@ -932,7 +931,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
     return __awaiter(this, void 0, void 0, function* () {
         checkKey(primaryKey);
         checkPaths(paths);
-        console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
+        console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
         const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
@@ -942,14 +941,14 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         const potentialCaches = (Array.isArray(restoreKeys) && restoreKeys.length
             ? restoreKeys
             : [primaryKey]).map(key => filenamify_1.default(key));
-        console.log({ cacheFiles, potentialCaches });
+        console.log(JSON.stringify({ potentialCaches }, null, 2));
         const result = locateCache(potentialCaches, cacheFiles);
         if (typeof result !== "object") {
             console.log("Unable to locate fitting cache file", {
-                cacheFiles,
-                potentialCaches,
                 restoreKeys,
-                primaryKey
+                primaryKey,
+                cacheFiles,
+                potentialCaches
             });
             return undefined;
         }
@@ -957,7 +956,7 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
         const cachePath = path_1.join(cacheDir, cache);
         const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${path_1.dirname(paths[0])}`;
         // --skip-old-files
-        console.log({ cacheDir, cache, cachePath, key, cmd });
+        console.log(JSON.stringify({ cacheDir, cache, cachePath, key, cmd }, null, 2));
         // 2. if we found one, rsync it back to the HD
         const createCacheDirPromise = execAsync(cmd);
         yield streamOutputUntilResolved(createCacheDirPromise);

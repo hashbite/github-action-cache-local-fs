@@ -74,7 +74,6 @@ function locateCache(
 ): { cache: string; key: string } | boolean {
     for (const potentialCache of potentialCaches) {
         for (const cacheFile of cacheFiles) {
-            console.log({ cacheFile, potentialCache });
             if (cacheFile.indexOf(potentialCache) !== -1) {
                 return { cache: cacheFile, key: potentialCache };
             }
@@ -101,7 +100,9 @@ export async function restoreCache(
     checkKey(primaryKey);
     checkPaths(paths);
 
-    console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }));
+    console.log(
+        JSON.stringify({ paths, primaryKey, restoreKeys, options }, null, 2)
+    );
 
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
 
@@ -120,16 +121,16 @@ export async function restoreCache(
         : [primaryKey]
     ).map(key => filenamify(key));
 
-    console.log({ cacheFiles, potentialCaches });
+    console.log(JSON.stringify({ potentialCaches }, null, 2));
 
     const result = locateCache(potentialCaches, cacheFiles);
 
     if (typeof result !== "object") {
         console.log("Unable to locate fitting cache file", {
-            cacheFiles,
-            potentialCaches,
             restoreKeys,
-            primaryKey
+            primaryKey,
+            cacheFiles,
+            potentialCaches
         });
         return undefined;
     }
@@ -142,7 +143,9 @@ export async function restoreCache(
 
     // --skip-old-files
 
-    console.log({ cacheDir, cache, cachePath, key, cmd });
+    console.log(
+        JSON.stringify({ cacheDir, cache, cachePath, key, cmd }, null, 2)
+    );
 
     // 2. if we found one, rsync it back to the HD
     const createCacheDirPromise = execAsync(cmd);
