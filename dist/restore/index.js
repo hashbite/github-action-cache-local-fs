@@ -810,6 +810,9 @@ function streamOutputUntilResolved(promise) {
         }
         if (stderr) {
             stderr.on("data", data => {
+                if (!data) {
+                    return;
+                }
                 console.error(`Received error chunk ${data}`);
             });
         }
