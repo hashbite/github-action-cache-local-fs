@@ -53,7 +53,7 @@ async function streamOutputUntilResolved(
 
     if (stdout) {
         stdout.on("data", data => {
-            console.log(`Received chunk ${data}`);
+            console.log(data);
         });
     }
 
@@ -62,7 +62,7 @@ async function streamOutputUntilResolved(
             if (!data) {
                 return;
             }
-            console.error(`Received error chunk ${data}`);
+            console.error(data);
         });
     }
 
