@@ -1,7 +1,7 @@
 import { exec, PromiseWithChild } from "child_process";
 import filenamify from "filenamify";
 import { readdir } from "fs";
-import { dirname, join, basename } from "path";
+import { basename, dirname, join } from "path";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
