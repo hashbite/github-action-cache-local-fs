@@ -1,7 +1,7 @@
 import { exec, PromiseWithChild } from "child_process";
 import filenamify from "filenamify";
 import { readdir } from "fs";
-import { dirname, join } from "path";
+import { dirname, join, basename } from "path";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
@@ -83,6 +83,13 @@ function locateCache(
     return false;
 }
 
+function getCacheDirPath(): string {
+    return join(
+        process.env.CACHE_DIR || `/media/cache/`,
+        process.env.GITHUB_REPOSITORY || ""
+    );
+}
+
 /**
  * Restores cache from keys
  *
@@ -98,18 +105,13 @@ export async function restoreCache(
 ): Promise<string | undefined> {
     checkKey(primaryKey);
     checkPaths(paths);
+    const path = paths[0];
 
-    console.log(JSON.stringify({ paths, primaryKey, restoreKeys }, null, 2));
-
-    const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
+    const cacheDir = getCacheDirPath();
 
     // 1. check if we find any dir that matches our keys from restoreKeys
 
-    const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
-
     // @todo order files by name/date
-
-    await streamOutputUntilResolved(mkdirPromise);
 
     const cacheFiles = await readDirAsync(cacheDir);
 
@@ -118,33 +120,36 @@ export async function restoreCache(
         : [primaryKey]
     ).map(key => filenamify(key));
 
-    console.log(JSON.stringify({ potentialCaches }, null, 2));
+    // console.log(JSON.stringify({ potentialCaches }, null, 2));
 
     const result = locateCache(potentialCaches, cacheFiles);
 
     if (typeof result !== "object") {
-        console.log("Unable to locate fitting cache file", {
-            restoreKeys,
-            primaryKey,
-            cacheFiles,
-            potentialCaches
-        });
+        console.log(
+            "Unable to locate fitting cache file",
+            JSON.stringify(
+                {
+                    cacheFiles,
+                    potentialCaches
+                },
+                null,
+                2
+            )
+        );
         return undefined;
     }
 
     const { key, cache } = result;
 
+    // Restore files from archive
     const cachePath = join(cacheDir, cache);
+    const baseDir = dirname(path);
+    const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${baseDir}`;
+    console.log("restore cache:", cmd);
 
-    const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${dirname(paths[0])}`;
-
-    // --skip-old-files
-
-    console.log(
-        JSON.stringify({ cacheDir, cache, cachePath, key, cmd }, null, 2)
-    );
-
-    // 2. if we found one, rsync it back to the HD
+    // console.log(
+    //     JSON.stringify({ cacheDir, cache, cachePath, key, cmd }, null, 2)
+    // );
     const createCacheDirPromise = execAsync(cmd);
 
     await streamOutputUntilResolved(createCacheDirPromise);
@@ -163,17 +168,24 @@ export async function saveCache(paths: string[], key: string): Promise<number> {
     checkPaths(paths);
     checkKey(key);
 
-    console.log(JSON.stringify({ key, paths, env: process.env }, null, 2));
+    // @todo for now we only support a single path.
+    const path = paths[0];
 
-    const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
+    const cacheDir = getCacheDirPath();
     const cacheName = `${filenamify(key)}.tar.lz4`;
     const cachePath = join(cacheDir, cacheName);
+    const baseDir = dirname(path);
+    const folderName = basename(path);
 
-    const cmd = `mkdir -p ${cacheDir} && tar cf - ${paths.join(
-        " "
-    )} | lz4 -v > ${cachePath}`;
+    // Ensure cache dir exists
+    const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
+    await streamOutputUntilResolved(mkdirPromise);
 
-    console.log({ cacheDir, cacheName, cachePath, cmd });
+    const cmd = `tar cf - -C ${baseDir} ${folderName} | lz4 -v > ${cachePath}`;
+
+    console.log("save cache:", cmd);
+
+    // console.log({ cacheDir, cacheName, cachePath, cmd });
 
     const createCacheDirPromise = execAsync(cmd);
 
