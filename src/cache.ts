@@ -4,8 +4,6 @@ import { readdir } from "fs";
 import { dirname, join } from "path";
 import { promisify } from "util";
 
-import { DownloadOptions, UploadOptions } from "./options";
-
 const execAsync = promisify(exec);
 const readDirAsync = promisify(readdir);
 
@@ -91,21 +89,17 @@ function locateCache(
  * @param paths a list of file paths to restore from the cache
  * @param primaryKey an explicit key for restoring the cache
  * @param restoreKeys an optional ordered list of keys to use for restoring the cache if no cache hit occurred for key
- * @param downloadOptions cache download options
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
 export async function restoreCache(
     paths: string[],
     primaryKey: string,
-    restoreKeys?: string[],
-    options?: DownloadOptions
+    restoreKeys?: string[]
 ): Promise<string | undefined> {
     checkKey(primaryKey);
     checkPaths(paths);
 
-    console.log(
-        JSON.stringify({ paths, primaryKey, restoreKeys, options }, null, 2)
-    );
+    console.log(JSON.stringify({ paths, primaryKey, restoreKeys }, null, 2));
 
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
 
@@ -163,20 +157,13 @@ export async function restoreCache(
  *
  * @param paths a list of file paths to be cached
  * @param key an explicit key for restoring the cache
- * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-export async function saveCache(
-    paths: string[],
-    key: string,
-    options?: UploadOptions
-): Promise<number> {
+export async function saveCache(paths: string[], key: string): Promise<number> {
     checkPaths(paths);
     checkKey(key);
 
-    console.log(
-        JSON.stringify({ env: process.env, paths, key, options }, null, 2)
-    );
+    console.log(JSON.stringify({ key, paths, env: process.env }, null, 2));
 
     const cacheDir = join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
     const cacheName = `${filenamify(key)}.tar.lz4`;

@@ -204,11 +204,7 @@ test("save with reserve cache failure outputs warning", async () => {
     await run();
 
     expect(saveCacheMock).toHaveBeenCalledTimes(1);
-    expect(saveCacheMock).toHaveBeenCalledWith(
-        [inputPath],
-        primaryKey,
-        expect.anything()
-    );
+    expect(saveCacheMock).toHaveBeenCalledWith([inputPath], primaryKey);
 
     expect(infoMock).toHaveBeenCalledWith(
         `Unable to reserve cache with key ${primaryKey}, another job may be creating this cache.`
@@ -246,11 +242,7 @@ test("save with server error outputs warning", async () => {
     await run();
 
     expect(saveCacheMock).toHaveBeenCalledTimes(1);
-    expect(saveCacheMock).toHaveBeenCalledWith(
-        [inputPath],
-        primaryKey,
-        expect.anything()
-    );
+    expect(saveCacheMock).toHaveBeenCalledWith([inputPath], primaryKey);
 
     expect(logWarningMock).toHaveBeenCalledTimes(1);
     expect(logWarningMock).toHaveBeenCalledWith("HTTP Error Occurred");
@@ -276,7 +268,6 @@ test("save with valid inputs uploads a cache", async () => {
 
     const inputPath = "node_modules";
     testUtils.setInput(Inputs.Path, inputPath);
-    testUtils.setInput(Inputs.UploadChunkSize, "4000000");
 
     const cacheId = 4;
     const saveCacheMock = jest
@@ -288,9 +279,7 @@ test("save with valid inputs uploads a cache", async () => {
     await run();
 
     expect(saveCacheMock).toHaveBeenCalledTimes(1);
-    expect(saveCacheMock).toHaveBeenCalledWith([inputPath], primaryKey, {
-        uploadChunkSize: 4000000
-    });
+    expect(saveCacheMock).toHaveBeenCalledWith([inputPath], primaryKey);
 
     expect(failedMock).toHaveBeenCalledTimes(0);
 });
