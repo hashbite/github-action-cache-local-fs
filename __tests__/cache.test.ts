@@ -7,14 +7,10 @@ import * as cache from "../src/cache";
 
 const execAsync = promisify(exec);
 
-const FIXTURES_DIR = resolve(".", "__tests__", "__fixtures__");
-const FIXTURES_BACKUP_DIR = resolve(".", "__tests__", "__fixtures-backup__");
-
-const CACHE_DIR = (process.env["CACHE_DIR"] = resolve(
-    ".",
-    "__tests__",
-    "__tmp__"
-));
+const FIXTURES_DIR = resolve(__dirname, "__fixtures__");
+const FIXTURES_BACKUP_DIR = resolve(__dirname, "__fixtures-backup__");
+const CACHE_DIR = (process.env.CACHE_DIR = resolve(__dirname, "__tmp__"));
+const GITHUB_REPOSITORY = (process.env.GITHUB_REPOSITORY = "integration-test");
 
 describe("save and restore files", () => {
     beforeEach(async () => {
@@ -25,7 +21,7 @@ describe("save and restore files", () => {
     test("creates archive file", async () => {
         await cache.saveCache([FIXTURES_DIR], "save-test");
         await fs.promises.access(
-            resolve(CACHE_DIR, "save-test.tar.lz4"),
+            resolve(CACHE_DIR, GITHUB_REPOSITORY, "save-test.tar.lz4"),
             fs.constants.R_OK | fs.constants.W_OK
         );
     });
