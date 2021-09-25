@@ -16,16 +16,12 @@ const CACHE_DIR = (process.env["CACHE_DIR"] = resolve(
     "__tmp__"
 ));
 
-beforeAll(async () => {
-    await fs.promises.rmdir(CACHE_DIR, { recursive: true });
-    await fs.promises.rmdir(FIXTURES_BACKUP_DIR, { recursive: true });
-});
-
-beforeEach(async () => {
-    await execAsync(`git checkout ${resolve(FIXTURES_DIR)}`);
-});
-
-describe("save", () => {
+describe("save and restore files", () => {
+    beforeEach(async () => {
+        await fs.promises.rmdir(CACHE_DIR, { recursive: true });
+        await fs.promises.rmdir(FIXTURES_BACKUP_DIR, { recursive: true });
+        await execAsync(`git checkout ${resolve(FIXTURES_DIR)}`);
+    });
     test("creates archive file", async () => {
         await cache.saveCache([FIXTURES_DIR], "save-test");
         await fs.promises.access(
@@ -33,9 +29,6 @@ describe("save", () => {
             fs.constants.R_OK | fs.constants.W_OK
         );
     });
-});
-
-describe("restore", () => {
     test("restores single archive file", async () => {
         await cache.saveCache([FIXTURES_DIR], "restore-test");
         await fs.promises.rename(FIXTURES_DIR, FIXTURES_BACKUP_DIR);
