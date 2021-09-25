@@ -1,4 +1,8 @@
 __tests__/runner/*
+__tests__/__tmp__
+__tests__/__fixtures-backup__
+
+.DS_Store
 
 node_modules/
 lib/
