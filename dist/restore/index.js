@@ -166,7 +166,6 @@ var Inputs;
     Inputs["Key"] = "key";
     Inputs["Path"] = "path";
     Inputs["RestoreKeys"] = "restore-keys";
-    Inputs["UploadChunkSize"] = "upload-chunk-size";
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
@@ -835,14 +834,13 @@ function locateCache(potentialCaches, cacheFiles) {
  * @param paths a list of file paths to restore from the cache
  * @param primaryKey an explicit key for restoring the cache
  * @param restoreKeys an optional ordered list of keys to use for restoring the cache if no cache hit occurred for key
- * @param downloadOptions cache download options
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCache(paths, primaryKey, restoreKeys, options) {
+function restoreCache(paths, primaryKey, restoreKeys) {
     return __awaiter(this, void 0, void 0, function* () {
         checkKey(primaryKey);
         checkPaths(paths);
-        console.log(JSON.stringify({ paths, primaryKey, restoreKeys, options }, null, 2));
+        console.log(JSON.stringify({ paths, primaryKey, restoreKeys }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         // 1. check if we find any dir that matches our keys from restoreKeys
         const mkdirPromise = execAsync(`mkdir -p ${cacheDir}`);
@@ -880,14 +878,13 @@ exports.restoreCache = restoreCache;
  *
  * @param paths a list of file paths to be cached
  * @param key an explicit key for restoring the cache
- * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-function saveCache(paths, key, options) {
+function saveCache(paths, key) {
     return __awaiter(this, void 0, void 0, function* () {
         checkPaths(paths);
         checkKey(key);
-        console.log(JSON.stringify({ env: process.env, paths, key, options }, null, 2));
+        console.log(JSON.stringify({ key, paths, env: process.env }, null, 2));
         const cacheDir = path_1.join(`/media/cache/`, process.env.GITHUB_REPOSITORY || "");
         const cacheName = `${filenamify_1.default(key)}.tar.lz4`;
         const cachePath = path_1.join(cacheDir, cacheName);
