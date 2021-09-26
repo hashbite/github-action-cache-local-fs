@@ -5227,16 +5227,12 @@ function locateCacheFile(filenameMatchers, cacheFiles) {
     const latestCacheFile = potentialCaches
         .sort((a, b) => {
         var _a, _b;
-        const birthtimeA = ((_a = a.stats) === null || _a === void 0 ? void 0 : _a.birthtimeMs) || 0;
-        const birthtimeB = ((_b = b.stats) === null || _b === void 0 ? void 0 : _b.birthtimeMs) || 0;
-        return birthtimeA > birthtimeB
-            ? 1
-            : birthtimeB > birthtimeA
-                ? -1
-                : 0;
+        const mtimeA = ((_a = a.stats) === null || _a === void 0 ? void 0 : _a.mtimeMs) || 0;
+        const mtimeB = ((_b = b.stats) === null || _b === void 0 ? void 0 : _b.mtimeMs) || 0;
+        return mtimeA > mtimeB ? 1 : mtimeB > mtimeA ? -1 : 0;
     })
         .pop();
-    console.log({ potentialCaches, latestCacheFile });
+    // console.log({ potentialCaches, latestCacheFile });
     if (!latestCacheFile) {
         return null;
     }

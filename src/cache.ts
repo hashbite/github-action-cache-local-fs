@@ -103,18 +103,14 @@ function locateCacheFile(
 
     const latestCacheFile = potentialCaches
         .sort((a, b) => {
-            const birthtimeA = a.stats?.birthtimeMs || 0;
-            const birthtimeB = b.stats?.birthtimeMs || 0;
+            const mtimeA = a.stats?.mtimeMs || 0;
+            const mtimeB = b.stats?.mtimeMs || 0;
 
-            return birthtimeA > birthtimeB
-                ? 1
-                : birthtimeB > birthtimeA
-                ? -1
-                : 0;
+            return mtimeA > mtimeB ? 1 : mtimeB > mtimeA ? -1 : 0;
         })
         .pop();
 
-    console.log({ potentialCaches, latestCacheFile });
+    // console.log({ potentialCaches, latestCacheFile });
 
     if (!latestCacheFile) {
         return null;
