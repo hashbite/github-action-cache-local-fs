@@ -59,9 +59,10 @@ describe("save and restore files", () => {
         // Expect the cache without fixture file to be restored
         return expect(
             fs.promises.access(filePath, fs.constants.R_OK | fs.constants.W_OK)
-        ).rejects.toMatchInlineSnapshot(
-            `[Error: ENOENT: no such file or directory, access '/Users/bene/dev/hashbite/github-action-cache-local-fs/__tests__/__fixtures__/helloWorld.txt']`
-        );
+        ).rejects.toMatchObject({
+            code: "ENOENT",
+            path: /helloWorld\.txt$/
+        });
     });
     test("restore from fallback key", async () => {
         // Save cache
