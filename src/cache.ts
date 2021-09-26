@@ -1,11 +1,12 @@
+import * as core from "@actions/core";
 import { exec, PromiseWithChild } from "child_process";
+import fg from "fast-glob";
 import filenamify from "filenamify";
-import { readdir } from "fs";
 import { basename, dirname, join } from "path";
+import prettyBytes from "pretty-bytes";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
-const readDirAsync = promisify(readdir);
 
 export class ReserveCacheError extends Error {
     constructor(message: string) {
@@ -53,7 +54,7 @@ async function streamOutputUntilResolved(
 
     if (stdout) {
         stdout.on("data", data => {
-            console.log(data);
+            core.info(data.trim());
         });
     }
 
@@ -62,25 +63,64 @@ async function streamOutputUntilResolved(
             if (!data) {
                 return;
             }
-            console.error(data);
+            core.warning(data.trim());
         });
     }
 
     return promise;
 }
 
-function locateCache(
-    potentialCaches,
-    cacheFiles
-): { cache: string; key: string } | boolean {
-    for (const potentialCache of potentialCaches) {
+function filterCacheFiles(
+    filenameMatchers,
+    cacheFiles: fg.Entry[]
+): { key: string | null; potentialCaches: fg.Entry[] } {
+    const potentialCaches: fg.Entry[] = [];
+    for (const filenameMatcher of filenameMatchers) {
         for (const cacheFile of cacheFiles) {
-            if (cacheFile.indexOf(potentialCache) !== -1) {
-                return { cache: cacheFile, key: potentialCache };
+            if (cacheFile.name.indexOf(filenameMatcher) !== -1) {
+                potentialCaches.push(cacheFile);
             }
         }
+        if (potentialCaches.length) {
+            return { key: filenameMatcher, potentialCaches };
+        }
     }
-    return false;
+    return { key: null, potentialCaches };
+}
+
+function locateCacheFile(
+    filenameMatchers,
+    cacheFiles: fg.Entry[]
+): { key: string; cacheFile: fg.Entry } | null {
+    const { key, potentialCaches } = filterCacheFiles(
+        filenameMatchers,
+        cacheFiles
+    );
+
+    if (!potentialCaches.length || !key) {
+        return null;
+    }
+
+    const latestCacheFile = potentialCaches
+        .sort((a, b) => {
+            const birthtimeA = a.stats?.birthtimeMs || 0;
+            const birthtimeB = b.stats?.birthtimeMs || 0;
+
+            return birthtimeA > birthtimeB
+                ? 1
+                : birthtimeB > birthtimeA
+                ? -1
+                : 0;
+        })
+        .pop();
+
+    // console.log({ potentialCaches, latestCacheFile });
+
+    if (!latestCacheFile) {
+        return null;
+    }
+
+    return { key, cacheFile: latestCacheFile };
 }
 
 function getCacheDirPath(): string {
@@ -110,46 +150,52 @@ export async function restoreCache(
     const cacheDir = getCacheDirPath();
 
     // 1. check if we find any dir that matches our keys from restoreKeys
-
-    // @todo order files by name/date
-
-    const cacheFiles = await readDirAsync(cacheDir);
-
-    const potentialCaches = (Array.isArray(restoreKeys) && restoreKeys.length
-        ? restoreKeys
+    const filenameMatchers = (Array.isArray(restoreKeys) && restoreKeys.length
+        ? [primaryKey, ...restoreKeys]
         : [primaryKey]
     ).map(key => filenamify(key));
+    const patterns = filenameMatchers.map(matcher => `${matcher}*`);
+    const cacheFiles: fg.Entry[] = await fg(patterns, {
+        cwd: cacheDir,
+        objectMode: true,
+        onlyFiles: true,
+        stats: true,
+        unique: true
+    });
 
-    // console.log(JSON.stringify({ potentialCaches }, null, 2));
+    // console.log(JSON.stringify({ patterns, cacheFiles }, null, 2));
 
-    const result = locateCache(potentialCaches, cacheFiles);
+    const result = locateCacheFile(filenameMatchers, cacheFiles);
 
-    if (typeof result !== "object") {
-        console.log(
-            "Unable to locate fitting cache file",
-            JSON.stringify(
+    if (!result) {
+        core.warning(
+            `Unable to locate fitting cache file:\n${JSON.stringify(
                 {
-                    cacheFiles,
-                    potentialCaches
+                    patterns,
+                    cacheFiles
                 },
                 null,
                 2
-            )
+            )}`
         );
         return undefined;
     }
 
-    const { key, cache } = result;
+    const { key, cacheFile } = result;
 
     // Restore files from archive
-    const cachePath = join(cacheDir, cache);
+    const cachePath = join(cacheDir, cacheFile.path);
     const baseDir = dirname(path);
     const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${baseDir}`;
-    console.log("restore cache:", cmd);
 
-    // console.log(
-    //     JSON.stringify({ cacheDir, cache, cachePath, key, cmd }, null, 2)
-    // );
+    core.info(
+        [
+            `Restoring cache: ${cacheFile.name}`,
+            `Created: ${cacheFile.stats?.birthtime}`,
+            `Size: ${prettyBytes(cacheFile.stats?.size || 0)}`
+        ].join("\n")
+    );
+
     const createCacheDirPromise = execAsync(cmd);
 
     await streamOutputUntilResolved(createCacheDirPromise);
@@ -183,8 +229,7 @@ export async function saveCache(paths: string[], key: string): Promise<number> {
 
     const cmd = `tar cf - -C ${baseDir} ${folderName} | lz4 -v > ${cachePath}`;
 
-    console.log("save cache:", cmd);
-
+    core.info(`Save cache: ${cacheName}`);
     // console.log({ cacheDir, cacheName, cachePath, cmd });
 
     const createCacheDirPromise = execAsync(cmd);

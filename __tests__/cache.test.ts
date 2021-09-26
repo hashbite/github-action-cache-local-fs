@@ -26,28 +26,57 @@ describe("save and restore files", () => {
         );
     });
     test("restores single archive file", async () => {
+        // Save cache
         await cache.saveCache([FIXTURES_DIR], "restore-test");
+
+        // Create backup dir from fixtrues for comparision
         await fs.promises.rename(FIXTURES_DIR, FIXTURES_BACKUP_DIR);
+
+        // Delete fixtures dir and restore
         await fs.promises.rmdir(FIXTURES_DIR, { recursive: true });
         await cache.restoreCache([FIXTURES_DIR], "restore-test");
+
+        // Assert that backup dir and restored dir have the same content
         await execAsync(`diff -Naur ${FIXTURES_DIR} ${FIXTURES_BACKUP_DIR}`);
     });
 
-    test.skip("restore latest archive file", async () => {
-        expect.assertions(1);
-        try {
-            const filePath = resolve(FIXTURES_DIR, "helloWorld.txt");
-            await cache.saveCache([FIXTURES_DIR], "latest-archive-test-1");
-            await fs.promises.unlink(filePath);
-            await cache.saveCache([FIXTURES_DIR], "latest-archive-test-2");
-            await fs.promises.rmdir(FIXTURES_DIR, { recursive: true });
-            await cache.restoreCache([FIXTURES_DIR], "latest-archive-test");
-            await fs.promises.access(
-                filePath,
-                fs.constants.R_OK | fs.constants.W_OK
-            );
-        } catch (e) {
-            expect(e).toMatch("file not found error");
-        }
+    test("restore latest archive file", async () => {
+        const filePath = resolve(FIXTURES_DIR, "helloWorld.txt");
+
+        // Save cache with fixture file
+        await cache.saveCache([FIXTURES_DIR], "latest-archive-test-1");
+
+        // Delete fixture file and save newer cache
+        await fs.promises.unlink(filePath);
+        await cache.saveCache([FIXTURES_DIR], "latest-archive-test-2");
+
+        // Delete fixtures dir and restore
+        await fs.promises.rmdir(FIXTURES_DIR, {
+            recursive: true
+        });
+        await cache.restoreCache([FIXTURES_DIR], "latest-archive-test");
+
+        // Expect the cache without fixture file to be restored
+        return expect(
+            fs.promises.access(filePath, fs.constants.R_OK | fs.constants.W_OK)
+        ).rejects.toMatchInlineSnapshot(
+            `[Error: ENOENT: no such file or directory, access '/Users/bene/dev/hashbite/github-action-cache-local-fs/__tests__/__fixtures__/helloWorld.txt']`
+        );
+    });
+    test("restore from fallback key", async () => {
+        // Save cache
+        await cache.saveCache([FIXTURES_DIR], "fallback-test");
+
+        // Create backup dir and remove fixtures
+        await fs.promises.rename(FIXTURES_DIR, FIXTURES_BACKUP_DIR);
+        await fs.promises.rmdir(FIXTURES_DIR, { recursive: true });
+
+        // Restore with non-existing primary key, but a matching fallback key
+        await cache.restoreCache([FIXTURES_DIR], "fallback-test-doesnt-exist", [
+            "fallback-test"
+        ]);
+
+        // Assert that backup dir and restored dir have the same content
+        await execAsync(`diff -Naur ${FIXTURES_DIR} ${FIXTURES_BACKUP_DIR}`);
     });
 });
