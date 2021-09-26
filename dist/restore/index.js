@@ -5236,7 +5236,7 @@ function locateCacheFile(filenameMatchers, cacheFiles) {
                 : 0;
     })
         .pop();
-    // console.log({ potentialCaches, latestCacheFile });
+    console.log({ potentialCaches, latestCacheFile });
     if (!latestCacheFile) {
         return null;
     }

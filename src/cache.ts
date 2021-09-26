@@ -114,7 +114,7 @@ function locateCacheFile(
         })
         .pop();
 
-    // console.log({ potentialCaches, latestCacheFile });
+    console.log({ potentialCaches, latestCacheFile });
 
     if (!latestCacheFile) {
         return null;
