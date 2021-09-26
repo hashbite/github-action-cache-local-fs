@@ -5374,7 +5374,7 @@ function restoreCache(paths, primaryKey, restoreKeys) {
         const cmd = `lz4 -d -v -c ${cachePath} | tar xf - -C ${baseDir}`;
         core.info([
             `Restoring cache: ${cacheFile.name}`,
-            `Created: ${(_a = cacheFile.stats) === null || _a === void 0 ? void 0 : _a.birthtime}`,
+            `Created: ${(_a = cacheFile.stats) === null || _a === void 0 ? void 0 : _a.mtime}`,
             `Size: ${pretty_bytes_1.default(((_b = cacheFile.stats) === null || _b === void 0 ? void 0 : _b.size) || 0)}`
         ].join("\n"));
         const createCacheDirPromise = execAsync(cmd);

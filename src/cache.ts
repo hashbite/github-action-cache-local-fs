@@ -187,7 +187,7 @@ export async function restoreCache(
     core.info(
         [
             `Restoring cache: ${cacheFile.name}`,
-            `Created: ${cacheFile.stats?.birthtime}`,
+            `Created: ${cacheFile.stats?.mtime}`,
             `Size: ${prettyBytes(cacheFile.stats?.size || 0)}`
         ].join("\n")
     );
