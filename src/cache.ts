@@ -164,16 +164,6 @@ export async function restoreCache(
     const result = locateCacheFile(filenameMatchers, cacheFiles);
 
     if (!result) {
-        core.warning(
-            `Unable to locate fitting cache file:\n${JSON.stringify(
-                {
-                    patterns,
-                    cacheFiles
-                },
-                null,
-                2
-            )}`
-        );
         return undefined;
     }
 

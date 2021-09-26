@@ -5271,10 +5271,6 @@ function restoreCache(paths, primaryKey, restoreKeys) {
         // console.log(JSON.stringify({ patterns, cacheFiles }, null, 2));
         const result = locateCacheFile(filenameMatchers, cacheFiles);
         if (!result) {
-            core.warning(`Unable to locate fitting cache file:\n${JSON.stringify({
-                patterns,
-                cacheFiles
-            }, null, 2)}`);
             return undefined;
         }
         const { key, cacheFile } = result;
