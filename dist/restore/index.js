@@ -5976,7 +5976,7 @@ function run() {
             }
             const primaryKey = core.getInput(constants_1.Inputs.Key, { required: true });
             core.saveState(constants_1.State.CachePrimaryKey, primaryKey);
-            const skipRestore = core.getInput("skipRestore") || false;
+            const skipRestore = core.getInput("skip-restore") || false;
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
                 required: true

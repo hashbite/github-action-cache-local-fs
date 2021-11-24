@@ -29,7 +29,7 @@ async function run(): Promise<void> {
             return;
         }
 
-        const skipSave = core.getInput("skipSave") || false;
+        const skipSave = core.getInput("skip-save") || false;
 
         if (skipSave) {
             core.info(`Save skipped`);

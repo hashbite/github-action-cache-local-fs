@@ -4810,7 +4810,7 @@ function run() {
                 utils.logWarning(`Error retrieving key from state.`);
                 return;
             }
-            const skipSave = core.getInput("skipSave") || false;
+            const skipSave = core.getInput("skip-save") || false;
             if (skipSave) {
                 core.info(`Save skipped`);
                 return;
