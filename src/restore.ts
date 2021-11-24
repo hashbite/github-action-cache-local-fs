@@ -25,11 +25,17 @@ async function run(): Promise<void> {
         const primaryKey = core.getInput(Inputs.Key, { required: true });
         core.saveState(State.CachePrimaryKey, primaryKey);
 
+        const skipRestore = core.getInput("skipRestore") || false;
+
         const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
         const cachePaths = utils.getInputAsArray(Inputs.Path, {
             required: true
         });
 
+        if (skipRestore) {
+            core.info(`Restore skipped`);
+            return;
+        }
         try {
             const cacheKey = await cache.restoreCache(
                 cachePaths,

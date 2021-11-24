@@ -5976,10 +5976,15 @@ function run() {
             }
             const primaryKey = core.getInput(constants_1.Inputs.Key, { required: true });
             core.saveState(constants_1.State.CachePrimaryKey, primaryKey);
+            const skipRestore = core.getInput("skipRestore") || false;
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
                 required: true
             });
+            if (skipRestore) {
+                core.info(`Restore skipped`);
+                return;
+            }
             try {
                 const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys);
                 if (!cacheKey) {
